@@ -843,7 +843,10 @@ exists or setup the property manually. For example like this:
     <target depends="init,deps-jar" name="-pre-pre-compile">
         <mkdir dir="${build.classes.dir}"/>
     </target>
-    <target name="-pre-compile">
+    <target name="-pre-compile"> 
+	<copy todir="${build.web.dir}/META-INF">
+    <fileset dir="${web.docbase.dir}/META-INF" includes="context.xml"/>
+</copy>
         <!-- Empty placeholder for easier customization. -->
         <!-- You can override this target in the ../build.xml file. -->
     </target>
