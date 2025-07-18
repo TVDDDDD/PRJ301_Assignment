@@ -17,7 +17,7 @@ import java.io.IOException;
 
 // Servlet for listing leave requests
 @WebServlet("/list_leaves")
-public class ListLeaveServlet extends HttpServlet {
+public class ListLeavesServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
