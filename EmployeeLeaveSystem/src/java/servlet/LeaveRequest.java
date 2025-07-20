@@ -6,78 +6,50 @@
 package servlet;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+   import java.sql.Connection;
+   import java.sql.DriverManager;
+   import java.sql.PreparedStatement;
+   import jakarta.servlet.ServletException;
+   import jakarta.servlet.annotation.WebServlet;
+   import jakarta.servlet.http.HttpServlet;
+   import jakarta.servlet.http.HttpServletRequest;
+   import jakarta.servlet.http.HttpServletResponse;
+import java.sql.SQLException;
 
-/**
- *
- * @author ACER
- */
-@WebServlet(name="LeaveRequest", urlPatterns={"/LeaveRequest"})
-public class LeaveRequest extends HttpServlet {
-   
-    /** 
-     * Processes requests for both HTTP <code>GET</code> and <code>POST</code> methods.
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
-    throws ServletException, IOException {
-        response.setContentType("text/html;charset=UTF-8");
-        try (PrintWriter out = response.getWriter()) {
-            /* TODO output your page here. You may use following sample code. */
-            out.println("<!DOCTYPE html>");
-            out.println("<html>");
-            out.println("<head>");
-            out.println("<title>Servlet LeaveRequest</title>");  
-            out.println("</head>");
-            out.println("<body>");
-            out.println("<h1>Servlet LeaveRequest at " + request.getContextPath () + "</h1>");
-            out.println("</body>");
-            out.println("</html>");
-        }
-    } 
+   @WebServlet("/LeaveRequest")
+   public class LeaveRequest extends HttpServlet {
+       @Override
+       protected void doPost(HttpServletRequest request, HttpServletResponse response)
+               throws ServletException, IOException {
+           if (!"manager".equals(request.getSession().getAttribute("role"))) {
+               response.sendRedirect("unauthorized.jsp");
+               return;
+           }
 
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-    /** 
-     * Handles the HTTP <code>GET</code> method.
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-    throws ServletException, IOException {
-        processRequest(request, response);
-    } 
+           int userId = (int) request.getSession().getAttribute("userId");
+           String startDate = request.getParameter("startDate");
+           String endDate = request.getParameter("endDate");
+           String reason = request.getParameter("reason");
 
-    /** 
-     * Handles the HTTP <code>POST</code> method.
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-    throws ServletException, IOException {
-        processRequest(request, response);
-    }
-
-    /** 
-     * Returns a short description of the servlet.
-     * @return a String containing servlet description
-     */
-    @Override
-    public String getServletInfo() {
-        return "Short description";
-    }// </editor-fold>
-
-}
+           try {
+               String url = "jdbc:sqlserver://localhost:1433;databaseName=LeaveManagementDB;encrypt=true;trustServerCertificate=true";
+               try (Connection conn = DriverManager.getConnection(url, "sa", "your_password") // Thay your_password
+               ) {
+                   String sql = "INSERT INTO LeaveRequests (user_id, start_date, end_date, reason, status) VALUES (?, ?, ?, ?, 'inprogress')";
+                   try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                       stmt.setInt(1, userId);
+                       stmt.setDate(2, java.sql.Date.valueOf(startDate));
+                       stmt.setDate(3, java.sql.Date.valueOf(endDate));
+                       stmt.setString(4, reason);
+                       stmt.executeUpdate();
+                       
+                       request.setAttribute("message", "Leave request submitted successfully");
+                       request.getRequestDispatcher("/leaveRequest.jsp").forward(request, response);
+                   }
+               }
+           } catch (ServletException | IOException | SQLException e) {
+               request.setAttribute("error", "Database error");
+               request.getRequestDispatcher("/leaveRequest.jsp").forward(request, response);
+           }
+       }
+   }
